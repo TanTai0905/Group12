@@ -56,9 +56,11 @@ def handle_client(client_socket, addr):
         attempts += 1
 
         if guess < secret_number:
-            send_message(client_socket, f"Higher! Attempts left: {max_attempts - attempts}")
+            if attempts < max_attempts:
+                send_message(client_socket, f"Higher! Attempts left: {max_attempts - attempts}")
         elif guess > secret_number:
-            send_message(client_socket, f"Lower! Attempts left: {max_attempts - attempts}")
+            if attempts < max_attempts:
+                send_message(client_socket, f"Lower! Attempts left: {max_attempts - attempts}")
         else:
             send_message(client_socket, f"Correct! Congratulations {player_name}, you've guessed the number in {attempts} attempts.")
             print(f"[{addr}] {player_name} guessed correctly!")
