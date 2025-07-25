@@ -39,7 +39,12 @@ def handle_client(client_socket, addr):
     secret_number = generate_secret_number()
     print(f"[{addr}] Secret number: {secret_number}")
 
-    while True:
+    max_attempts = 5
+    attempts = 0
+
+    send_message(client_socket, f"Hello {player_name}! Guess the secret number (1-100). You have {max_attempts} attempts.")
+
+    while attempts < max_attempts:
         guess = receive_guess(client_socket)
         if guess is None:
             print(f"[{addr}] Disconnected.")
@@ -48,14 +53,18 @@ def handle_client(client_socket, addr):
             send_message(client_socket, "Please enter a valid number.")
             continue
 
+        attempts += 1
+
         if guess < secret_number:
-            send_message(client_socket, "Higher! Try again.")
+            send_message(client_socket, f"Higher! Attempts left: {max_attempts - attempts}")
         elif guess > secret_number:
-            send_message(client_socket, "Lower! Try again.")
+            send_message(client_socket, f"Lower! Attempts left: {max_attempts - attempts}")
         else:
-            send_message(client_socket, f"Correct! Congratulations {player_name}, you've guessed the number.")
+            send_message(client_socket, f"Correct! Congratulations {player_name}, you've guessed the number in {attempts} attempts.")
             print(f"[{addr}] {player_name} guessed correctly!")
             break
+    else:
+        send_message(client_socket, f"Sorry {player_name}, you've used all attempts. The number was {secret_number}. Better luck next time!")
 
     client_socket.close()
 
