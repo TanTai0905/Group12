@@ -59,6 +59,6 @@ def start_server(host, port):
         thread.start()
 
 if __name__ == "__main__":
-    HOST = "0.0.0.0"
-    PORT = 12345  # Specify a port number here
+    HOST = "127.0.0.1"
+    PORT = 12345
     start_server(HOST, PORT)
