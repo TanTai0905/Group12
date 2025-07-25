@@ -6,10 +6,17 @@ def generate_secret_number():
     """Generate a random secret number between 1 and 100."""
     return random.randint(1, 100)
 
-def receive_guess(client_socket):
-    """Receive and parse the guess from the client."""
+def receive_message(client_socket):
+    """Receive a message from the client."""
     data = client_socket.recv(1024).decode('utf-8')
     if not data:
+        return None
+    return data.strip()
+
+def receive_guess(client_socket):
+    """Receive and parse the guess from the client."""
+    data = receive_message(client_socket)
+    if data is None:
         return None
     try:
         return int(data)
@@ -22,6 +29,13 @@ def send_message(client_socket, message):
 
 def handle_client(client_socket, addr):
     """Handle a single client session."""
+    send_message(client_socket, "Welcome! Please enter your name:")
+    player_name = receive_message(client_socket)
+    if not player_name:
+        client_socket.close()
+        return
+    print(f"[{addr}] Player name: {player_name}")
+
     secret_number = generate_secret_number()
     print(f"[{addr}] Secret number: {secret_number}")
 
@@ -39,8 +53,8 @@ def handle_client(client_socket, addr):
         elif guess > secret_number:
             send_message(client_socket, "Lower! Try again.")
         else:
-            send_message(client_socket, "Correct! You've guessed the number.")
-            print(f"[{addr}] Guessed correctly!")
+            send_message(client_socket, f"Correct! Congratulations {player_name}, you've guessed the number.")
+            print(f"[{addr}] {player_name} guessed correctly!")
             break
 
     client_socket.close()
