@@ -39,7 +39,7 @@ def handle_client(client_socket, addr):
     secret_number = generate_secret_number()
     print(f"[{addr}] Secret number: {secret_number}")
 
-    max_attempts = 5
+    max_attempts = 10  # Change from 5 to 10
     attempts = 0
 
     send_message(client_socket, f"Hello {player_name}! Guess the secret number (1-100). You have {max_attempts} attempts.")
@@ -64,7 +64,7 @@ def handle_client(client_socket, addr):
             print(f"[{addr}] {player_name} guessed correctly!")
             break
     else:
-        send_message(client_socket, f"Sorry {player_name}, you've used all attempts. The number was {secret_number}. Better luck next time!")
+        send_message(client_socket, f"You fail! The number was {secret_number}.")
 
     client_socket.close()
 
