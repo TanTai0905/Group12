@@ -6,7 +6,7 @@
 ## Thành viên nhóm
 - ** Nguyễn Tấn Tài**  Client và tổng hợp báo cáo
 - ** Trương Hoàng Tuấn Kiệt**  Server
-- ** Nguyễn Trung Kiên**  Client GUI(Tkinter)
+- ** Nguyễn Trung Kiên**Client GUI(Tkinter)
 
 ## Mô hình kiến trúc
 Ứng dụng được xây dựng theo mô hình **Client-Server đa kết nối( Multi Client TCP socket)**:
@@ -30,7 +30,7 @@ Mỗi Client có thể :
 ## Cấu trúc thư mục
 ├── Client.py # Giao diện dòng lệnh
 ├── ClientGUI.py # Giao diện đồ họa (Tkinter)
-├── server.py # Server chính lắng nghe kết nốiREADME.md # Tài liệu hướng dẫn (file này)
+├── README.md # Tài liệu hướng dẫn (file này)
 ├── Background.jpg # Hình nền GUI
 ├── server.py # Server chính lắng nghe kết nối
  
