@@ -29,17 +29,20 @@ def send_message(client_socket, message):
 
 def handle_client(client_socket, addr):
     """Handle a single client session."""
+    ip, port = addr  # unpack IP and port
+    print(f"[INFO] New connection from {ip}:{port}")
+
     send_message(client_socket, "Welcome! Please enter your name:")
     player_name = receive_message(client_socket)
     if not player_name:
         client_socket.close()
         return
-    print(f"[{addr}] Player name: {player_name}")
+    print(f"[INFO] Player '{player_name}' connected from {ip}:{port}")
 
     secret_number = generate_secret_number()
-    print(f"[{addr}] Secret number: {secret_number}")
+    print(f"[INFO] Secret number for {player_name} ({ip}:{port}): {secret_number}")
 
-    max_attempts = 10  # Change from 5 to 10
+    max_attempts = 10
     attempts = 0
 
     send_message(client_socket, f"Hello {player_name}! Guess the secret number (1-100). You have {max_attempts} attempts.")
@@ -47,7 +50,7 @@ def handle_client(client_socket, addr):
     while attempts < max_attempts:
         guess = receive_guess(client_socket)
         if guess is None:
-            print(f"[{addr}] Disconnected.")
+            print(f"[INFO] {player_name} ({ip}:{port}) disconnected.")
             break
         if guess == "invalid":
             send_message(client_socket, "Please enter a valid number.")
@@ -63,7 +66,7 @@ def handle_client(client_socket, addr):
                 send_message(client_socket, f"Lower! Attempts left: {max_attempts - attempts}")
         else:
             send_message(client_socket, f"Correct! Congratulations {player_name}, you've guessed the number in {attempts} attempts.")
-            print(f"[{addr}] {player_name} guessed correctly!")
+            print(f"[INFO] {player_name} ({ip}:{port}) guessed correctly!")
             break
     else:
         send_message(client_socket, f"You fail! The number was {secret_number}.")
