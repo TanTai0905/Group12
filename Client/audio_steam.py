@@ -5,7 +5,7 @@ import time
 
 # ===== CONFIG =====
 SERVER_HOST = "0.0.0.0"  # Địa chỉ IP của server
-SERVER_PORT = 50007 # Cổng kết nối tới server
+SERVER_PORT = 5001 # Cổng kết nối tới server
 CHUNK = 1024 
 FORMAT = pyaudio.paInt16 
 CHANNELS = 1
