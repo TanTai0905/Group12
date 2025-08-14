@@ -1,7 +1,8 @@
 import socket
+from shared.config import HOST_CLIENT_CONNECT, PORT_CHAT, BUFFER_SIZE, ENCODING
 
 class Client:
-    def __init__(self, host="127.0.0.1", port=5001):
+    def __init__(self, host=HOST_CLIENT_CONNECT, port=PORT_CHAT):
         self.host = host
         self.port = port
         self.client_socket = None
@@ -18,14 +19,14 @@ class Client:
     def send_message(self, msg):
         """Gửi tin nhắn tới server"""
         try:
-            self.client_socket.sendall(msg.encode('utf-8'))
+            self.client_socket.sendall(msg.encode(ENCODING))
         except Exception as e:
             print(f"[ERROR] Gửi tin nhắn thất bại: {e}")
 
     def receive_message(self):
         """Nhận tin nhắn từ server"""
         try:
-            data = self.client_socket.recv(1024).decode('utf-8')
+            data = self.client_socket.recv(BUFFER_SIZE).decode(ENCODING)
             return data
         except Exception as e:
             print(f"[ERROR] Nhận tin nhắn thất bại: {e}")
