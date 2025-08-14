@@ -1,58 +1,71 @@
-# audio_steam.py
 import socket
+import threading
 import pyaudio
 import time
 
-# ===== CONFIG =====
-SERVER_HOST = "0.0.0.0"  # Địa chỉ IP của server
-SERVER_PORT = 5001 # Cổng kết nối tới server
-CHUNK = 1024 
-FORMAT = pyaudio.paInt16 
-CHANNELS = 1
-RATE = 44100
-RECONNECT_DELAY = 3
+class AudioStream:
+    def __init__(self, host, port, chunk=1024, rate=44100, channels=1, callback=None):
+        self.host = host
+        self.port = port
+        self.chunk = chunk
+        self.rate = rate
+        self.channels = channels
+        self.callback = callback  # GUI sẽ nhận trạng thái từ đây
+        self.running = False
+        self.thread = None
 
+    def start(self):
+        if self.running:
+            return
+        self.running = True
+        self.thread = threading.Thread(target=self._stream_audio, daemon=True)
+        self.thread.start()
 
-def audio_stream():
-    """Ghi âm từ mic và gửi tới server."""
-    audio = pyaudio.PyAudio()
+    def stop(self):
+        self.running = False
+        if self.thread:
+            self.thread.join()
 
-    while True:
-        try:
-            print(f"[AUDIO] Đang kết nối tới {SERVER_HOST}:{SERVER_PORT}...")
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect((SERVER_HOST, SERVER_PORT))
-            print("[AUDIO] Đã kết nối tới server")
+    def _stream_audio(self):
+        audio = pyaudio.PyAudio()
+        reconnect_delay = 3
 
-            stream = audio.open(format=FORMAT,
-                                channels=CHANNELS,
-                                rate=RATE,
-                                input=True,
-                                frames_per_buffer=CHUNK)
-
-            while True:
-                data = stream.read(CHUNK, exception_on_overflow=False)
-                sock.sendall(data)
-
-        except ConnectionRefusedError:
-            print(f"[ERROR] Server không phản hồi, thử lại sau {RECONNECT_DELAY}s...")
-            time.sleep(RECONNECT_DELAY)
-        except (BrokenPipeError, ConnectionResetError):
-            print("[ERROR] Mất kết nối tới server, đang thử lại...")
-            time.sleep(RECONNECT_DELAY)
-        except Exception as e:
-            print(f"[ERROR] Lỗi không xác định: {e}")
-            time.sleep(RECONNECT_DELAY)
-        finally:
+        while self.running:
             try:
-                stream.stop_stream()
-                stream.close()
-            except:
-                pass
-            try:
-                sock.close()
-            except:
-                pass
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.connect((self.host, self.port))
+                if self.callback:
+                    self.callback("connected")
 
-if __name__ == "__main__":
-    audio_stream()
+                stream = audio.open(format=pyaudio.paInt16,
+                                    channels=self.channels,
+                                    rate=self.rate,
+                                    input=True,
+                                    frames_per_buffer=self.chunk)
+
+                while self.running:
+                    data = stream.read(self.chunk, exception_on_overflow=False)
+                    sock.sendall(data)
+
+            except ConnectionRefusedError:
+                if self.callback:
+                    self.callback("server_not_responding")
+                time.sleep(reconnect_delay)
+            except (BrokenPipeError, ConnectionResetError):
+                if self.callback:
+                    self.callback("connection_lost")
+                time.sleep(reconnect_delay)
+            except Exception as e:
+                if self.callback:
+                    self.callback(f"error: {e}")
+                time.sleep(reconnect_delay)
+            finally:
+                try:
+                    stream.stop_stream()
+                    stream.close()
+                except:
+                    pass
+                try:
+                    sock.close()
+                except:
+                    pass
