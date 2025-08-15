@@ -1,8 +1,6 @@
 import socket
 import threading
-
-HOST = "0.0.0.0"  
-PORT = 5001      
+from shared.config import HOST_SERVER_BIND, PORT_CHAT, BUFFER_SIZE, ENCODING
 
 def handle_client(client_socket, client_address):
     """Xử lý kết nối từ một client."""
@@ -10,14 +8,14 @@ def handle_client(client_socket, client_address):
 
     try:
         while True:
-            data = client_socket.recv(1024)
+            data = client_socket.recv(BUFFER_SIZE)
             if not data:
-                break  # Client đóng kết nối
-            message = data.decode('utf-8')
+                break
+            message = data.decode(ENCODING)
             print(f"[{client_address}] {message}")
 
             # Gửi lại phản hồi cho client (echo)
-            client_socket.sendall(f"Server nhận: {message}".encode('utf-8'))
+            client_socket.sendall(f"Server nhận: {message}".encode(ENCODING))
 
     except Exception as e:
         print(f"[LỖI] Client {client_address}: {e}")
@@ -27,20 +25,18 @@ def handle_client(client_socket, client_address):
         print(f"[NGẮT] Client {client_address} đã ngắt kết nối.")
 
 def main():
-    # Tạo socket TCP
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     try:
-        server_socket.bind((HOST, PORT))
+        server_socket.bind((HOST_SERVER_BIND, PORT_CHAT))
         server_socket.listen(5)
-        print(f"[SERVER] Đang chạy tại {HOST}:{PORT} ...")
+        print(f"[SERVER] Đang chạy tại {HOST_SERVER_BIND}:{PORT_CHAT} ...")
 
         while True:
             client_socket, client_address = server_socket.accept()
-            # Tạo luồng riêng để xử lý client
             client_thread = threading.Thread(
-                target=handle_client, 
+                target=handle_client,
                 args=(client_socket, client_address),
                 daemon=True
             )
