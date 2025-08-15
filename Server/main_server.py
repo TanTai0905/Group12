@@ -1,52 +1,70 @@
 import socket
-import threading
-from shared.config import HOST_SERVER_BIND, PORT_CHAT, BUFFER_SIZE, ENCODING
+from shared.config import HOST_SERVER, PORT_CHAT, BUFFER_SIZE, ENCODING
 
-def handle_client(client_socket, client_address):
-    """Xử lý kết nối từ một client."""
-    print(f"[KẾT NỐI] Client {client_address} đã kết nối.")
+class Server:
+    def __init__(self, host=HOST_SERVER, port=PORT_CHAT):
+        self.host = host
+        self.port = port
+        self.server_socket = None
+        self.client_socket = None
+        self.client_address = None
 
-    try:
-        while True:
-            data = client_socket.recv(BUFFER_SIZE)
-            if not data:
-                break
-            message = data.decode(ENCODING)
-            print(f"[{client_address}] {message}")
+    def start(self):
+        """Khởi động server và lắng nghe kết nối"""
+        try:
+            self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.server_socket.bind((self.host, self.port))
+            self.server_socket.listen(1)
+            print(f"[SERVER] Đang lắng nghe trên {self.host}:{self.port}...")
+            
+            self.client_socket, self.client_address = self.server_socket.accept()
+            print(f"[SERVER] Đã kết nối với client từ {self.client_address}")
+        except Exception as e:
+            print(f"[ERROR] Không thể khởi động server: {e}")
 
-            # Gửi lại phản hồi cho client (echo)
-            client_socket.sendall(f"Server nhận: {message}".encode(ENCODING))
+    def receive_message(self):
+        """Nhận tin nhắn từ client"""
+        try:
+            data = self.client_socket.recv(BUFFER_SIZE).decode(ENCODING)
+            return data
+        except Exception as e:
+            print(f"[ERROR] Nhận tin nhắn thất bại: {e}")
+            return None
 
-    except Exception as e:
-        print(f"[LỖI] Client {client_address}: {e}")
+    def send_message(self, msg):
+        """Gửi tin nhắn tới client"""
+        try:
+            self.client_socket.sendall(msg.encode(ENCODING))
+        except Exception as e:
+            print(f"[ERROR] Gửi tin nhắn thất bại: {e}")
 
-    finally:
-        client_socket.close()
-        print(f"[NGẮT] Client {client_address} đã ngắt kết nối.")
+    def close(self):
+        """Đóng kết nối"""
+        if self.client_socket:
+            self.client_socket.close()
+        if self.server_socket:
+            self.server_socket.close()
+        print("[SERVER] Đã đóng kết nối")
 
-def main():
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-    try:
-        server_socket.bind((HOST_SERVER_BIND, PORT_CHAT))
-        server_socket.listen(5)
-        print(f"[SERVER] Đang chạy tại {HOST_SERVER_BIND}:{PORT_CHAT} ...")
-
-        while True:
-            client_socket, client_address = server_socket.accept()
-            client_thread = threading.Thread(
-                target=handle_client,
-                args=(client_socket, client_address),
-                daemon=True
-            )
-            client_thread.start()
-
-    except Exception as e:
-        print(f"[LỖI] {e}")
-    finally:
-        server_socket.close()
-        print("[SERVER] Đã tắt.")
 
 if __name__ == "__main__":
-    main()
+    server = Server()
+    server.start()
+
+    try:
+        while True:
+            # Nhận tin nhắn từ client
+            message = server.receive_message()
+            if not message or message.lower() == "/quit":
+                break
+            
+            print(f"Client: {message}")
+            
+            # Gửi phản hồi
+            reply = input("Server: ")
+            server.send_message(reply)
+            
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.close()
