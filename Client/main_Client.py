@@ -38,7 +38,6 @@ class Client:
             self.client_socket.close()
             print("[CLIENT] Đã đóng kết nối")
 
-
 if __name__ == "__main__":
     client = Client()
     client.connect()
