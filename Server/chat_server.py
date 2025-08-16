@@ -2,7 +2,7 @@ import socket
 import threading
 import select
 import pyaudio
-from shared.config import HOST_SERVER, PORT_CHAT, BUFFER_SIZE, ENCODING
+from shared.config import HOST_CLIENT_CONNECT, PORT_CHAT, BUFFER_SIZE, ENCODING
 
 class ChatServer:
     def __init__(self):

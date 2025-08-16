@@ -2,7 +2,7 @@ import socket
 import threading
 import pyaudio
 import time
-from shared.config import HOST_SERVER, PORT_CHAT, BUFFER_SIZE, ENCODING
+from shared.config import HOST_CLIENT_CONNECT, PORT_CHAT, BUFFER_SIZE, ENCODING
 
 class AudioServer:
     def __init__(self, callback=None):
