@@ -1,8 +1,8 @@
 # server/client_handler.py
 
 import threading
+import json
 from shared.config import BUFFER_SIZE, ENCODING
-
 
 class ClientHandler(threading.Thread):
     """
@@ -56,3 +56,38 @@ class ClientHandler(threading.Thread):
             except Exception:
                 pass
             print(f"[NGẮT] Client {self.client_address} đã ngắt kết nối.")
+
+    def _handle_broadcast_messages(self):
+        """Xử lý các message broadcast từ server"""
+        while self.active and self.client_socket:
+            try:
+                data = self.client_socket.recv(BUFFER_SIZE)
+                if not data:
+                    break
+
+                # Phân loại message
+                if data.startswith(b"SYS_MSG|"):
+                    # System message
+                    message = data[8:].decode(ENCODING)  # Bỏ qua 8 byte header
+                    self._handle_system_message(message)
+                elif data.startswith(b"USER_LIST|"):
+                    # User list update
+                    message = data[10:].decode(ENCODING)
+                    self._handle_user_list(message)
+                else:
+                    # Audio data
+                    pass  # Xử lý audio data ở chỗ khác
+
+            except Exception as e:
+                print(f"Lỗi xử lý broadcast: {e}")
+                break
+
+    def _handle_system_message(self, message_json):
+        """Xử lý system message từ server"""
+        try:
+            data = json.loads(message_json)
+            if data.get("type") == "SYSTEM":
+                print(f"[SYSTEM] {data.get('message')}")
+                # Có thể hiển thị trên GUI
+        except json.JSONDecodeError:
+            print(f"[SYSTEM] {message_json}")
