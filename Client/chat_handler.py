@@ -4,13 +4,14 @@ import json
 from shared import config
 
 class ChatHandler:
-    def __init__(self, host=config.HOST_CLIENT_CONNECT, port=config.PORT_CHAT, username="User"):
+    def __init__(self, host=config.HOST_CLIENT_CONNECT, port=config.PORT_CHAT, username="User", history_manager=None):
         self.host = host
         self.port = port
         self.username = username
         self.client_socket = None
         self.running = False
         self.room_id = "general"
+        self.history_manager = history_manager  # thêm vào để quản lý lịch sử
 
     def connect(self):
         try:
@@ -48,6 +49,11 @@ class ChatHandler:
                 "room_id": self.room_id
             }
             self.client_socket.sendall(json.dumps(data).encode(config.ENCODING))
+
+            # ✅ Lưu lịch sử khi gửi
+            if self.history_manager:
+                self.history_manager.save_message(self.username, message, self.room_id)
+
             return True, "Đã gửi tin nhắn"
         except Exception as e:
             return False, f"Gửi tin nhắn thất bại: {e}"
@@ -77,6 +83,15 @@ class ChatHandler:
                         msg_data = json.loads(data)
                     except json.JSONDecodeError:
                         msg_data = {"type": "TEXT", "message": data}
+
+                    # ✅ Lưu lịch sử khi nhận
+                    if self.history_manager and msg_data.get("type") == "CHAT_MESSAGE":
+                        self.history_manager.save_message(
+                            msg_data.get("username", "unknown"),
+                            msg_data.get("message", ""),
+                            msg_data.get("room_id", self.room_id)
+                        )
+
                     callback(msg_data)
                 except Exception as e:
                     callback({"type": "ERROR", "message": str(e)})

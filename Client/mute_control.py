@@ -1,6 +1,6 @@
 # mute_control.py
 class MuteControl:
-    def __init__(self, client):
+    def __init__(self):
         self.is_muted = False
         
     def mute(self):
