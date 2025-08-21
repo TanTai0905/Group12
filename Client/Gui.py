@@ -3,10 +3,11 @@ import customtkinter as ctk
 import threading
 import json
 from datetime import datetime
-from history_manager import HistoryManager
-from chat_handler import ChatHandler
-from audio_stream import AudioStream
-from shared import config
+from .history_manager import HistoryManager
+from .chat_handler import ChatHandler
+from .audio_stream import AudioStream
+from ..shared import config
+
 
 class ChatApp:
     def __init__(self, root, username="User", host=config.HOST_CLIENT_CONNECT):
@@ -189,9 +190,13 @@ class ChatApp:
                 self.audio_stream.stop()
                 self.audio_stream = None
                 self.is_audio_connected = False
-                
-            self.current_room_id = None
-            self.clear_user_list()
+            # lưu lịch sử cuộc gọi
+            if hasattr(self, 'call_start_time'):
+                duration = (datetime.now() - self.call_start_time).total_seconds()
+                duration_str = str(int(duration))
+                self.history_manager.add_call_entry(self.current_room_id, duration_str)
+        self.current_room_id = None
+        self.clear_user_list()
             
     def join_audio_room(self, room_id, password, mode="JOIN"):
         """Tham gia hoặc tạo phòng audio"""
@@ -207,7 +212,7 @@ class ChatApp:
             password=password,
             callback=self.handle_audio_event
         )
-        
+        self.call_start_time = datetime.now() #ghi lại thời gian bắt đầu cuộc gọi
         self.audio_stream.start()
         self.is_audio_connected = True
 
@@ -228,7 +233,7 @@ class ChatApp:
             return
             
         self.is_muted = not self.is_muted
-        self.audio_stream.mute_control.toggle_mute()
+        self.audio_stream.mute_control.toggle()
         
         if self.is_muted:
             self.mute_button.configure(text="Unmute", fg_color="#f39c12")
@@ -249,6 +254,7 @@ class ChatApp:
             
             if room_id == self.current_room_id:
                 self.display_message(sender, message)
+                self.history_manager.add_chat_entry(sender, message)
                 
         elif msg_type == "USER_LIST":
             # Cập nhật danh sách người dùng

@@ -13,7 +13,7 @@ class MuteControl:
         self.is_muted = False   
         print("[MuteControl] Micro đã bật.")
         
-    def toggle_(self):
+    def toggle(self):
         """Chuyển đổi trạng thái micro"""
         self.is_muted = not self.is_muted
         print(f"[MuteControl] Micro đang {'tắt'if self.is_muted else'bật'}.")

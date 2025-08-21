@@ -1,49 +1,35 @@
-# Client/main_Client.py
-from Client.audio_stream import AudioStream
-from Client.chat_handler import ChatHandler
-from Client.history_manager import HistoryManager
-from shared import config
+import customtkinter as ctk
+import sys
+import os
 
-# Sau này sẽ thay bằng import GUI và Login_gui
-# from Client.GUI import MainGUI
-# from Client.Login_gui import LoginGUI
+# Thêm đường dẫn gốc và các thư mục cần thiết vào sys.path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+sys.path.append(current_dir)
+
+from Client.Gui import ChatApp
+from Client.Login_gui import LoginGUI
 
 def main():
-    print("🚀 Khởi động Client...")
+    print("🚀 Khởi động Chat Client với GUI...")
+    print(f"Current directory: {current_dir}")
+    print(f"Parent directory: {parent_dir}")
+    print(f"Python path: {sys.path}")
 
-    # Khởi tạo quản lý lịch sử
-    history = HistoryManager()
+    def on_login_success(username):
+        """Callback khi đăng nhập thành công"""
+        ctk.set_appearance_mode("light")
+        root = ctk.CTk()
+        root.title(f"Chat Application - {username}")
+        root.geometry("1200x800")
 
-    # Khởi tạo ChatHandler
-    chat = ChatHandler(
-        host=config.HOST_CLIENT_CONNECT,
-        port=config.PORT_CHAT,
-        username="UserTest"
-    )
-    ok, msg = chat.connect()
-    print(msg)
-    if not ok:
-        return
+        app = ChatApp(root, username=username)
+        root.mainloop()
 
-    # Khởi tạo AudioStream
-    audio = AudioStream(
-        host=config.HOST_CLIENT_CONNECT,
-        port=config.PORT_AUDIO,
-        mode="JOIN",
-        username="UserTest",
-        room_id="general"
-    )
-    audio.start()
-
-    # Fake callback demo (sau này GUI sẽ nhận sự kiện qua callback này)
-    def chat_callback(data):
-        print("[ChatCallback]", data)
-        if data.get("type") == "CHAT_MESSAGE":
-            history.add_chat_entry(data["username"], data["message"])
-
-    chat.receive_messages(chat_callback)
-
-    print("✅ Client đã sẵn sàng (chờ GUI/Login_gui tích hợp...)")
+    # Hiển thị màn hình đăng nhập đầu tiên
+    login_app = LoginGUI(on_login_success_callback=on_login_success)
+    login_app.show()
 
 if __name__ == "__main__":
     main()

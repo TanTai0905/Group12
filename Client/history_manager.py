@@ -20,7 +20,7 @@ class HistoryManager:
         self.history.append(entry)
         self.save_history()
 
-    def add_call_entry(self, partner, duration):
+    def add_call_entry(self, partner, duration):    
         entry = {
             "type": "CALL",
             "partner": partner,
