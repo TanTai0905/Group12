@@ -3,9 +3,11 @@ import threading
 import pyaudio
 import time
 import json
+import sys
+import os
 from .mute_control import MuteControl
-from ..shared import config
 
+from shared import config
 
 class AudioStream:
     def __init__(self, host, port,

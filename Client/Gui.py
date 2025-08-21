@@ -6,7 +6,7 @@ from datetime import datetime
 from .history_manager import HistoryManager
 from .chat_handler import ChatHandler
 from .audio_stream import AudioStream
-from ..shared import config
+from shared import config
 
 
 class ChatApp:

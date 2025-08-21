@@ -1,7 +1,7 @@
 import socket
 import threading
 import json
-from ..shared import config
+from shared import config
 
 class ChatHandler:
     def __init__(self, host=config.HOST_CLIENT_CONNECT, port=config.PORT_CHAT, username="User", history_manager=None):
