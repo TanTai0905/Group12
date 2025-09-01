@@ -1,250 +1,281 @@
-# Login_gui.py
+# Client/Login_gui.py
 import customtkinter as ctk
 import json
 import os
+import hashlib
 
 USERS_FILE = "users.json"
 
 class LoginGUI:
-    def __init__(self, on_login_success_callback=None):
-        """
-        Khởi tạo module đăng nhập
-        :param on_login_success_callback: Hàm callback được gọi khi đăng nhập thành công
-        """
+    def __init__(self, on_login_success_callback=None, on_login_failure_callback=None):
         self.on_login_success = on_login_success_callback
+        self.on_login_failure = on_login_failure_callback
         self.root = None
+        
+    def _hash_password(self, password):
+        """Hash mật khẩu đơn giản"""
+        return hashlib.sha256(password.encode()).hexdigest()
         
     def load_users(self):
         """Tải dữ liệu người dùng từ file"""
         if os.path.exists(USERS_FILE):
-            with open(USERS_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
+            try:
+                with open(USERS_FILE, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except:
+                return {}
         return {}
 
     def save_users(self, users):
         """Lưu dữ liệu người dùng vào file"""
-        with open(USERS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(users, f, ensure_ascii=False, indent=4)
+        try:
+            with open(USERS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(users, f, ensure_ascii=False, indent=4)
+            return True
+        except:
+            return False
 
     def register_user(self, username, password):
         """Đăng ký người dùng mới"""
         users = self.load_users()
         if username in users:
             return False, "Tên đăng nhập đã tồn tại"
-        users[username] = password
-        self.save_users(users)
-        return True, "Đăng ký thành công"
+        
+        if len(username) < 3:
+            return False, "Tên đăng nhập phải có ít nhất 3 ký tự"
+            
+        if len(password) < 4:
+            return False, "Mật khẩu phải có ít nhất 4 ký tự"
+            
+        users[username] = self._hash_password(password)
+        if self.save_users(users):
+            return True, "Đăng ký thành công"
+        else:
+            return False, "Lỗi lưu dữ liệu"
 
     def authenticate_user(self, username, password):
         """Xác thực người dùng"""
         users = self.load_users()
         if username not in users:
             return False, "Tên đăng nhập không tồn tại"
-        if users[username] != password:
+            
+        if users[username] != self._hash_password(password):
             return False, "Mật khẩu không đúng"
+            
         return True, "Đăng nhập thành công"
 
     def show(self):
         """Hiển thị cửa sổ đăng nhập"""
-        ctk.set_appearance_mode("System")
+        ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
         
         self.root = ctk.CTk()
-        self.root.title("Đăng Nhập")
-        self.root.geometry("1000x600")
+        self.root.title("Đăng Nhập - Audio Call App")
+        self.root.geometry("400x500")
+        self.root.resizable(False, False)
         
-        # ------------------ Khung đăng nhập chính ------------------
-        login_frame = ctk.CTkFrame(master=self.root, width=400, height=520, corner_radius=20, fg_color=("white", "#2b2b2b"))
-        login_frame.place(relx=0.5, rely=0.5, anchor=ctk.CENTER)
-
-        title_label = ctk.CTkLabel(master=login_frame, text="Đăng Nhập", font=("Arial", 36, "bold"), text_color=("black", "white"))
-        title_label.pack(pady=30, padx=10)
+        # Main frame
+        main_frame = ctk.CTkFrame(self.root, corner_radius=15)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
         
-        username_entry = ctk.CTkEntry(master=login_frame, placeholder_text="Tên đăng nhập", width=300, height=50,
-                                      corner_radius=10, font=("Arial", 16))
-        username_entry.pack(pady=12, padx=10)
-
-        # --- Ô nhập mật khẩu ---
-        password_entry = ctk.CTkEntry(master=login_frame, placeholder_text="Mật khẩu", width=300, height=50,
-                                      corner_radius=10, show="*", font=("Arial", 16))
-        password_entry.pack(pady=(12,5), padx=10)
-
-        def toggle_password():
-            if show_password_var.get():
-                password_entry.configure(show="")
-            else:
-                password_entry.configure(show="*")
+        # Title
+        title_label = ctk.CTkLabel(main_frame, text="Audio Call App", 
+                                  font=("Arial", 24, "bold"))
+        title_label.pack(pady=30)
         
-        show_password_var = ctk.BooleanVar(value=False)
-        show_password_checkbox = ctk.CTkCheckBox(
-            master=login_frame,
-            text="Hiện mật khẩu",
-            variable=show_password_var,
-            command=toggle_password,
-            font=("Arial", 12),
-            checkbox_width=16,
-            checkbox_height=16
-        )
-        # căn phải dưới ô mật khẩu
-        show_password_checkbox.pack(anchor="e", padx=20, pady=(0,12))
-
-        # Nút Đăng Nhập
-        login_button = ctk.CTkButton(master=login_frame, text="Đăng Nhập", command=lambda: self.on_login_clicked(username_entry, password_entry, message_label),
-                                     width=300, height=50, corner_radius=10, font=("Arial", 18, "bold"))
-        login_button.pack(pady=15, padx=10)
+        subtitle_label = ctk.CTkLabel(main_frame, text="Đăng nhập để tiếp tục",
+                                     font=("Arial", 14))
+        subtitle_label.pack(pady=(0, 30))
         
-        # Link đăng ký
-        register_frame = ctk.CTkFrame(master=login_frame, fg_color="transparent", height=30)
-        register_frame.pack(pady=8)
+        # Login form
+        form_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        form_frame.pack(fill="x", padx=30)
         
-        text_part = ctk.CTkLabel(master=register_frame, text="Chưa có tài khoản? ", font=("Arial", 14),
-                                 text_color=("black", "white"))
-        text_part.pack(side=ctk.LEFT)
+        # Username
+        ctk.CTkLabel(form_frame, text="Tên đăng nhập:", 
+                    font=("Arial", 12)).pack(anchor="w", pady=(0, 5))
+        self.username_entry = ctk.CTkEntry(form_frame, placeholder_text="Nhập username",
+                                          height=40, font=("Arial", 12))
+        self.username_entry.pack(fill="x", pady=(0, 15))
         
-        link_part = ctk.CTkLabel(master=register_frame, text="Đăng ký", font=("Arial", 14, "bold"),
-                                 text_color=("#1F6AA5", "#3B8ED0"), cursor="hand2")
-        link_part.pack(side=ctk.LEFT)
+        # Password
+        ctk.CTkLabel(form_frame, text="Mật khẩu:", 
+                    font=("Arial", 12)).pack(anchor="w", pady=(0, 5))
+        self.password_entry = ctk.CTkEntry(form_frame, placeholder_text="Nhập mật khẩu",
+                                          height=40, show="*", font=("Arial", 12))
+        self.password_entry.pack(fill="x", pady=(0, 10))
         
-        def on_enter(e):
-            link_part.configure(text_color=("#0F4C75", "#2A7CC7"), font=("Arial", 14, "bold", "underline"))
-        def on_leave(e):
-            link_part.configure(text_color=("#1F6AA5", "#3B8ED0"), font=("Arial", 14, "bold"))
-        link_part.bind("<Enter>", on_enter)
-        link_part.bind("<Leave>", on_leave)
-
-        # Khung chứa thông báo
-        message_label = ctk.CTkLabel(master=login_frame, text="", font=("Arial", 14))
-        message_label.pack(pady=5)
-
-        def clear_message():
-            message_label.configure(text="")
-            username_entry.configure(border_color=("#3B8ED0", "#1F6AA5"))
-            password_entry.configure(border_color=("#3B8ED0", "#1F6AA5"))
-
-        def open_register_window():
-            register_window = ctk.CTkToplevel(self.root)
-            register_window.title("Đăng Ký Tài Khoản")
-            register_window.geometry("500x550")
-            register_window.resizable(False, False)
-            register_window.grab_set()
-            
-            register_frame = ctk.CTkFrame(master=register_window, width=400, height=480,
-                                         corner_radius=20, fg_color=("white", "#2b2b2b"))
-            register_frame.place(relx=0.5, rely=0.5, anchor=ctk.CENTER)
-
-            title_label = ctk.CTkLabel(master=register_frame, text="Đăng Ký", font=("Arial", 30, "bold"),
-                                       text_color=("black", "white"))
-            title_label.pack(pady=25, padx=10)
-            
-            reg_username_entry = ctk.CTkEntry(master=register_frame, placeholder_text="Tên đăng nhập", width=300, height=50,
-                                              corner_radius=10, font=("Arial", 16))
-            reg_username_entry.pack(pady=12, padx=10)
-
-            reg_password_entry = ctk.CTkEntry(master=register_frame, placeholder_text="Mật khẩu", width=300, height=50,
-                                              corner_radius=10, show="*", font=("Arial", 16))
-            reg_password_entry.pack(pady=(12,5), padx=10)
-
-            reg_confirm_password_entry = ctk.CTkEntry(master=register_frame, placeholder_text="Nhập lại mật khẩu", width=300,
-                                                      height=50, corner_radius=10, show="*", font=("Arial", 16))
-            reg_confirm_password_entry.pack(pady=(12,5), padx=10)
-
-            def toggle_reg_password():
-                if reg_show_password_var.get():
-                    reg_password_entry.configure(show="")
-                    reg_confirm_password_entry.configure(show="")
-                else:
-                    reg_password_entry.configure(show="*")
-                    reg_confirm_password_entry.configure(show="*")
-            
-            reg_show_password_var = ctk.BooleanVar(value=False)
-            reg_show_password_checkbox = ctk.CTkCheckBox(
-                master=register_frame,
-                text="Hiện mật khẩu",
-                variable=reg_show_password_var,
-                command=toggle_reg_password,
-                font=("Arial", 12),
-                checkbox_width=16,
-                checkbox_height=16
-            )
-            # căn phải dưới ô mật khẩu
-            reg_show_password_checkbox.pack(anchor="e", padx=20, pady=(0,12))
-
-            reg_message_label = ctk.CTkLabel(master=register_frame, text="", font=("Arial", 14))
-            reg_message_label.pack(pady=5)
-
-            def on_register_clicked():
-                username = reg_username_entry.get().strip()
-                password = reg_password_entry.get().strip()
-                confirm_password = reg_confirm_password_entry.get().strip()
-                
-                if not username or not password or not confirm_password:
-                    reg_message_label.configure(text="Vui lòng nhập đầy đủ thông tin!", text_color="red")
-                    return
-                if password != confirm_password:
-                    reg_message_label.configure(text="Mật khẩu không khớp!", text_color="red")
-                    return
-                
-                success, msg = self.register_user(username, password)
-                reg_message_label.configure(text=msg, text_color="green" if success else "red")
-                if success:
-                    register_window.after(1500, register_window.destroy)
-
-            register_button = ctk.CTkButton(master=register_frame, text="Đăng Ký", command=on_register_clicked,
-                                           width=300, height=50, corner_radius=10, font=("Arial", 18, "bold"))
-            register_button.pack(pady=15, padx=10)
-
-        link_part.bind("<Button-1>", lambda e: open_register_window())
+        # Show password checkbox
+        self.show_password_var = ctk.BooleanVar(value=False)
+        show_password_cb = ctk.CTkCheckBox(form_frame, text="Hiện mật khẩu",
+                                          variable=self.show_password_var,
+                                          command=self._toggle_password_visibility)
+        show_password_cb.pack(anchor="w", pady=(0, 20))
         
-        # Lưu các widget cần thiết cho phương thức on_login_clicked
-        self.username_entry = username_entry
-        self.password_entry = password_entry
-        self.message_label = message_label
-        self.clear_message = clear_message
-
+        # Login button
+        login_btn = ctk.CTkButton(form_frame, text="Đăng nhập", 
+                                 command=self._on_login_clicked,
+                                 height=45, font=("Arial", 14, "bold"))
+        login_btn.pack(fill="x", pady=(0, 15))
+        
+        # Register link
+        register_frame = ctk.CTkFrame(form_frame, fg_color="transparent")
+        register_frame.pack(fill="x")
+        
+        ctk.CTkLabel(register_frame, text="Chưa có tài khoản? ",
+                    font=("Arial", 12)).pack(side="left")
+        
+        register_link = ctk.CTkLabel(register_frame, text="Đăng ký ngay",
+                                    font=("Arial", 12, "bold"), 
+                                    text_color="#3498db", cursor="hand2")
+        register_link.pack(side="left")
+        register_link.bind("<Button-1>", lambda e: self._show_register_window())
+        
+        # Status message
+        self.status_label = ctk.CTkLabel(form_frame, text="", 
+                                        font=("Arial", 12), text_color="red")
+        self.status_label.pack(pady=10)
+        
+        # Center window
+        self.root.update_idletasks()
+        width = self.root.winfo_width()
+        height = self.root.winfo_height()
+        x = (self.root.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.root.winfo_screenheight() // 2) - (height // 2)
+        self.root.geometry(f"{width}x{height}+{x}+{y}")
+        
+        # Bind Enter key to login
+        self.root.bind('<Return>', lambda e: self._on_login_clicked())
+        
         self.root.mainloop()
 
-    def on_login_clicked(self, username_entry, password_entry, message_label):
-        """Xử lý sự kiện click nút đăng nhập"""
-        self.clear_message()
-        username = username_entry.get().strip()
-        password = password_entry.get().strip()
+    def _toggle_password_visibility(self):
+        """Hiện/ẩn mật khẩu"""
+        if self.show_password_var.get():
+            self.password_entry.configure(show="")
+        else:
+            self.password_entry.configure(show="*")
+
+    def _on_login_clicked(self):
+        """Xử lý sự kiện click đăng nhập"""
+        username = self.username_entry.get().strip()
+        password = self.password_entry.get().strip()
         
         if not username or not password:
-            message_label.configure(text="Vui lòng nhập đầy đủ thông tin!", text_color="red")
-            if not username:
-                username_entry.configure(border_color="red")
-            if not password:
-                password_entry.configure(border_color="red")
+            self.status_label.configure(text="Vui lòng nhập đầy đủ thông tin!")
             return
-        
-        success, msg = self.authenticate_user(username, password)
+            
+        success, message = self.authenticate_user(username, password)
         if success:
-            if self.on_login_success:
-                self.root.destroy()
-                self.on_login_success(username)
-            else:
-                message_label.configure(text="Đăng nhập thành công! (Không có callback)", text_color="green")
+            self.status_label.configure(text=message, text_color="green")
+            self.root.after(1000, lambda: self._login_success(username))
         else:
-            message_label.configure(text=msg, text_color="red")
+            self.status_label.configure(text=message, text_color="red")
+
+    def _login_success(self, username):
+        """Xử lý đăng nhập thành công"""
+        self.root.destroy()
+        if self.on_login_success:
+            self.on_login_success(username)
+
+    def _show_register_window(self):
+        """Hiển thị cửa sổ đăng ký"""
+        register_window = ctk.CTkToplevel(self.root)
+        register_window.title("Đăng ký tài khoản")
+        register_window.geometry("400x500")
+        register_window.resizable(False, False)
+        register_window.transient(self.root)
+        register_window.grab_set()
+        
+        # Main frame
+        main_frame = ctk.CTkFrame(register_window, corner_radius=15)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Title
+        title_label = ctk.CTkLabel(main_frame, text="Đăng ký tài khoản", 
+                                  font=("Arial", 20, "bold"))
+        title_label.pack(pady=20)
+        
+        # Form frame
+        form_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        form_frame.pack(fill="x", padx=30)
+        
+        # Username
+        ctk.CTkLabel(form_frame, text="Tên đăng nhập:", 
+                    font=("Arial", 12)).pack(anchor="w", pady=(0, 5))
+        username_entry = ctk.CTkEntry(form_frame, placeholder_text="Nhập username",
+                                     height=40, font=("Arial", 12))
+        username_entry.pack(fill="x", pady=(0, 15))
+        
+        # Password
+        ctk.CTkLabel(form_frame, text="Mật khẩu:", 
+                    font=("Arial", 12)).pack(anchor="w", pady=(0, 5))
+        password_entry = ctk.CTkEntry(form_frame, placeholder_text="Nhập mật khẩu",
+                                     height=40, show="*", font=("Arial", 12))
+        password_entry.pack(fill="x", pady=(0, 10))
+        
+        # Confirm password
+        ctk.CTkLabel(form_frame, text="Xác nhận mật khẩu:", 
+                    font=("Arial", 12)).pack(anchor="w", pady=(0, 5))
+        confirm_password_entry = ctk.CTkEntry(form_frame, placeholder_text="Nhập lại mật khẩu",
+                                             height=40, show="*", font=("Arial", 12))
+        confirm_password_entry.pack(fill="x", pady=(0, 15))
+        
+        # Show password checkbox
+        show_password_var = ctk.BooleanVar(value=False)
+        def toggle_passwords():
+            if show_password_var.get():
+                password_entry.configure(show="")
+                confirm_password_entry.configure(show="")
+            else:
+                password_entry.configure(show="*")
+                confirm_password_entry.configure(show="*")
+                
+        show_password_cb = ctk.CTkCheckBox(form_frame, text="Hiện mật khẩu",
+                                          variable=show_password_var,
+                                          command=toggle_passwords)
+        show_password_cb.pack(anchor="w", pady=(0, 20))
+        
+        # Register button
+        def on_register_click():
+            username = username_entry.get().strip()
+            password = password_entry.get().strip()
+            confirm_password = confirm_password_entry.get().strip()
+            
+            if not username or not password or not confirm_password:
+                status_label.configure(text="Vui lòng nhập đầy đủ thông tin!", text_color="red")
+                return
+                
+            if password != confirm_password:
+                status_label.configure(text="Mật khẩu không khớp!", text_color="red")
+                return
+                
+            success, message = self.register_user(username, password)
+            if success:
+                status_label.configure(text=message, text_color="green")
+                register_window.after(1500, register_window.destroy)
+            else:
+                status_label.configure(text=message, text_color="red")
+        
+        register_btn = ctk.CTkButton(form_frame, text="Đăng ký", 
+                                    command=on_register_click,
+                                    height=45, font=("Arial", 14, "bold"))
+        register_btn.pack(fill="x", pady=(0, 15))
+        
+        # Status label
+        status_label = ctk.CTkLabel(form_frame, text="", 
+                                   font=("Arial", 12))
+        status_label.pack()
+        
+        # Center window
+        register_window.update_idletasks()
+        width = register_window.winfo_width()
+        height = register_window.winfo_height()
+        x = (register_window.winfo_screenwidth() // 2) - (width // 2)
+        y = (register_window.winfo_screenheight() // 2) - (height // 2)
+        register_window.geometry(f"{width}x{height}+{x}+{y}")
 
     def close(self):
-        """Đóng cửa sổ đăng nhập"""
+        """Đóng cửa sổ"""
         if self.root:
             self.root.destroy()
-
-
-# Hàm tiện ích để tương thích ngược
-def create_login_window():
-    """Hàm tạo cửa sổ đăng nhập (tương thích với code cũ)"""
-    login_gui = LoginGUI()
-    login_gui.show()
-
-
-if __name__ == "__main__":
-    # Chạy độc lập nếu được gọi trực tiếp
-    def demo_callback(username):
-        print(f"Đăng nhập thành công với user: {username}")
-        # Ở đây có thể khởi động ứng dụng chat chính
-    
-    login_gui = LoginGUI(on_login_success_callback=demo_callback)
-    login_gui.show()
