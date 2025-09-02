@@ -1,30 +1,25 @@
-"""
-Cấu hình dùng chung cho cả Server và Client
-Tách riêng HOST cho server bind và client connect để dễ thay đổi khi triển khai
-"""
+# shared/config.py
+# Cấu hình dùng chung cho client & server
 
-HOST_SERVER_BIND = "0.0.0.0"  # Lắng nghe trên tất cả IP của máy chủ
-HOST_CLIENT_CONNECT = "127.0.0.1"  # IP client kết nối đến
+HOST_SERVER_BIND = "0.0.0.0"
+HOST_CLIENT_CONNECT = "127.0.0.1"
 
-# PORT cho các dịch vụ - mỗi dịch vụ dùng port riêng
-PORT_CHAT = 5001      # Chat server
-PORT_AUDIO = 5002     # Audio server
+PORT_AUDIO = 5002
+PORT_SIGNALING = 5001
 
-# Cấu hình chung
-BUFFER_SIZE = 1024
+BUFFER_SIZE = 4096
 ENCODING = "utf-8"
 
-# Audio config
-AUDIO_CHUNK = 1024
-AUDIO_RATE = 44100
+# 🔽 GIẢM CHUNK SIZE để giảm độ trễ
+AUDIO_CHUNK = 256      # Giảm từ 1024 xuống 256 (giảm 4 lần)
+AUDIO_RATE = 16000     # Giảm từ 44100 xuống 16000 (đủ cho voice)
 AUDIO_CHANNELS = 1
+AUDIO_FORMAT = 2       # pyaudio.paInt16
 
-# Broadcast settings
-BROADCAST_BUFFER_SIZE = 4096  # Kích thước buffer cho broadcast
-BROADCAST_INTERVAL = 1.0      # Khoảng thời gian broadcast (giây)
-MAX_BROADCAST_CLIENTS = 50    # Số client tối đa trong 1 lần broadcast
+# Socket/timeouts
+SOCKET_TIMEOUT = 5.0
+CONNECTION_TIMEOUT = 10.0
 
-# Message headers
-HEADER_SYSTEM = b"SYS_MSG|"
-HEADER_USER_LIST = b"USER_LIST|"
-HEADER_AUDIO = b"AUDIO_DATA|"
+# 🔽 Thêm cấu hình mới cho audio processing
+AUDIO_SAMPLE_WIDTH = 2  # 16-bit = 2 bytes
+SILENCE_THRESHOLD = 100  # Ngưỡng silence detection
