@@ -11,7 +11,7 @@ if project_root not in sys.path:
 try:
     from Client.Gui import ChatApp
     from Client.Login_gui import LoginGUI
-except ImportError as e:
+except ImportError as e:    
     print(f"Import error: {e}")
     # Fallback: try direct import
     from Gui import ChatApp
