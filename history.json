@@ -1,0 +1,132 @@
+[
+  {
+    "timestamp": "2025-09-03T01:52:49.658573",
+    "room_id": "room_1756839135_0",
+    "participants": [
+      "nguyentai",
+      "nguyen"
+    ],
+    "duration_seconds": 13.701751,
+    "duration_formatted": "13s"
+  },
+  {
+    "timestamp": "2025-09-04T17:44:40.089961",
+    "room_id": "room_1756982623_0",
+    "participants": [
+      "ChoKien",
+      "taicho"
+    ],
+    "duration_seconds": 35.581091,
+    "duration_formatted": "35s"
+  },
+  {
+    "timestamp": "2025-09-04T17:47:53.699031",
+    "room_id": "room_1756982846_0",
+    "participants": [
+      "nguyentai",
+      "ChoKien"
+    ],
+    "duration_seconds": 12.831185,
+    "duration_formatted": "12s"
+  },
+  {
+    "timestamp": "2025-09-04T17:49:22.442511",
+    "room_id": "room_1756982947_0",
+    "participants": [
+      "nguyentai",
+      "taicho"
+    ],
+    "duration_seconds": 0.658014,
+    "duration_formatted": "0s"
+  },
+  {
+    "timestamp": "2025-09-04T17:49:56.387603",
+    "room_id": "room_1756982947_0",
+    "participants": [
+      "nguyentai",
+      "taicho"
+    ],
+    "duration_seconds": 32.91603,
+    "duration_formatted": "32s"
+  },
+  {
+    "timestamp": "2025-09-04T17:58:11.539181",
+    "room_id": "room_1756982947_0",
+    "participants": [
+      "nguyentai",
+      "taicho"
+    ],
+    "duration_seconds": 5.502818,
+    "duration_formatted": "5s"
+  },
+  {
+    "timestamp": "2025-09-04T18:11:13.628063",
+    "room_id": "room_1756984243_0",
+    "participants": [
+      "ChoKien",
+      "nguyen"
+    ],
+    "duration_seconds": 20.493129,
+    "duration_formatted": "20s"
+  },
+  {
+    "timestamp": "2025-09-04T18:14:44.744189",
+    "room_id": "room_1756984434_0",
+    "participants": [
+      "nguyen",
+      "taicho"
+    ],
+    "duration_seconds": 7.042659,
+    "duration_formatted": "7s"
+  },
+  {
+    "timestamp": "2025-09-04T18:15:17.958162",
+    "room_id": "room_1756984434_0",
+    "participants": [
+      "nguyen",
+      "taicho"
+    ],
+    "duration_seconds": 27.094356,
+    "duration_formatted": "27s"
+  },
+  {
+    "timestamp": "2025-09-04T18:29:14.968973",
+    "room_id": "room_1756985296_0",
+    "participants": [
+      "nguyen",
+      "taicho"
+    ],
+    "duration_seconds": 8.777287,
+    "duration_formatted": "8s"
+  },
+  {
+    "timestamp": "2025-09-04T18:32:57.792991",
+    "room_id": "room_1756985296_0",
+    "participants": [
+      "nguyen",
+      "taicho"
+    ],
+    "duration_seconds": 216.138711,
+    "duration_formatted": "3m 36s"
+  },
+  {
+    "timestamp": "2025-09-04T18:32:58.835950",
+    "room_id": "room_1756985296_0",
+    "participants": [
+      "nguyen",
+      "taicho"
+    ],
+    "duration_seconds": 0.425935,
+    "duration_formatted": "0s"
+  },
+  {
+    "timestamp": "2025-09-04T18:46:51.865678",
+    "room_id": "room_1756986311_0",
+    "participants": [
+      "taicho",
+      "nguyen"
+    ],
+    "duration_seconds": 47.510969,
+    "duration_formatted": "47s"
+  }
+]

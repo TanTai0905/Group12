@@ -86,11 +86,11 @@ class NetworkHandler:
     def set_audio_handler(self, handler):
         """Đăng ký audio handler để phát audio"""
         self.audio_handler = handler
-    
+   #debug 
     def send_message(self, message):
         """Gửi message đến server"""
         if not self.connected or not self.sock:
-            logging.warning("[NetworkHandler] Not connected, cannot send message")
+            logging.warning(f"[NetworkHandler] Not connected, cannot send message. Connected: {self.connected}, Socket: {self.sock}")
             return False
             
         try:

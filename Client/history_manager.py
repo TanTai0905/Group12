@@ -75,4 +75,4 @@ if __name__ == "__main__":
     hm = HistoryManager("test_history.json")
     hm.add_call("room_123", ["user1", "user2"], 125.5)
     hm.add_call("room_456", ["user1", "user3"], 45.0)
-    print("Recent calls:", hm.get_recent_calls())   
+    print("Recent calls:", hm.get_recent_calls())

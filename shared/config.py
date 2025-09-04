@@ -2,7 +2,7 @@
 # Cấu hình dùng chung cho client & server
 
 HOST_SERVER_BIND = "0.0.0.0"
-HOST_CLIENT_CONNECT = "127.0.0.1"
+HOST_CLIENT_CONNECT = "192.168.1.216"
 
 PORT_AUDIO = 5002
 PORT_SIGNALING = 5001

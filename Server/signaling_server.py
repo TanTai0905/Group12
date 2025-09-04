@@ -35,6 +35,7 @@ class SignalingServer:
         timeout_thread.start()
         
         logging.info(f"[SignalingServer] Listening on {self.host}:{self.port}")
+        logging.info(f"[SignalingServer] Clients will connect to: {config.HOST_CLIENT_CONNECT}:{config.PORT_SIGNALING}")
         
         while self.running:
             try:
@@ -106,9 +107,10 @@ class SignalingServer:
                             continue
                         try:
                             message = json.loads(line)
+                            logging.info(f"[ServerDebug] Received: {message.get('type')} from socket {sock.fileno()}")
                             self.process_message(sock, message)
                         except json.JSONDecodeError as e:
-                            logging.warning(f"[SignalingServer] Invalid JSON: {e}")
+                            logging.warning(f"[SignalingServer] Invalid JSON: {e}, data: {line}")
                             continue
 
                 except socket.timeout:
@@ -127,12 +129,15 @@ class SignalingServer:
 
         if msg_type == 'REGISTER':
             username = message.get('username')
+            logging.info(f"[ServerDebug] REGISTER attempt: {username}")
+            
             if username and username not in [info['username'] for info in self.clients.values() if info]:
                 self.clients[sock] = {'username': username, 'room': None}
                 self.send_response(sock, {'type': 'REGISTER_SUCCESS'})
                 logging.info(f"[SignalingServer] Registered user: {username}")
             else:
                 self.send_response(sock, {'type': 'REGISTER_FAIL', 'message': 'Username already taken or invalid'})
+                logging.warning(f"[SignalingServer] Registration failed for: {username}")
 
         elif msg_type == 'CREATE_ROOM':
             if not client_info['room']:
@@ -142,17 +147,22 @@ class SignalingServer:
                 self.clients[sock]['room'] = room_id
                 self.send_response(sock, {'type': 'ROOM_CREATED', 'room_id': room_id})
                 logging.info(f"[SignalingServer] Created room {room_id} by {client_info['username']}")
+                logging.info(f"[ServerDebug] Room {room_id} users: {self.rooms[room_id]['users']}")
             else:
                 self.send_response(sock, {'type': 'ERROR', 'message': 'Already in a room'})
+                logging.warning(f"[ServerDebug] User {client_info['username']} already in room {client_info['room']}")
 
         elif msg_type == 'JOIN_ROOM':
             room_id = message.get('room_id')
             password = message.get('password', '')
+            logging.info(f"[ServerDebug] JOIN_ROOM attempt: {client_info['username']} -> {room_id}")
+            
             if room_id in self.rooms and self.rooms[room_id]['password'] == password:
                 if client_info['room'] is None:
                     self.rooms[room_id]['sockets'].append(sock)
                     self.rooms[room_id]['users'].append(client_info['username'])
                     self.clients[sock]['room'] = room_id
+                    
                     # Gửi phản hồi cho client vừa join
                     self.send_response(sock, {
                         'type': 'JOIN_SUCCESS',
@@ -171,10 +181,13 @@ class SignalingServer:
                             })
                     
                     logging.info(f"[SignalingServer] {client_info['username']} joined room {room_id}")
+                    logging.info(f"[ServerDebug] Room {room_id} now has users: {self.rooms[room_id]['users']}")
                 else:
                     self.send_response(sock, {'type': 'ERROR', 'message': 'Already in a room'})
+                    logging.warning(f"[ServerDebug] User {client_info['username']} already in room {client_info['room']}")
             else:
                 self.send_response(sock, {'type': 'ERROR', 'message': 'Invalid room ID or password'})
+                logging.warning(f"[ServerDebug] Join failed: invalid room {room_id} or password")
 
         elif msg_type == 'AUDIO_DATA':
             with self.lock:
@@ -183,43 +196,61 @@ class SignalingServer:
                     room_id = client_info['room']
                     room = self.rooms.get(room_id)
                     if room:
+                        # DEBUG QUAN TRỌNG: Log audio data info
+                        username = client_info['username']
+                        data_size = len(message.get('data', ''))
+                        recipient_count = len(room['sockets']) - 1
+                        
+                        logging.info(f"[AudioDebug] {username} -> Room {room_id}: {data_size} bytes to {recipient_count} recipients")
+                        
                         payload = {
                             'type': 'AUDIO_DATA',
-                            'from': client_info['username']
+                            'from': username
                         }
                         
-                        # Kiểm tra và lấy data (base64 string)
                         data = message.get('data', '')
-                        if not data:
-                            logging.warning(f"[SignalingServer] Empty audio data from {client_info['username']}")
-                        elif not isinstance(data, str):
-                            logging.error(f"[SignalingServer] Invalid data type for audio data from {client_info['username']}")
+                        if data and isinstance(data, str):
+                            payload['data'] = data
+                            
+                            # Forward đến tất cả clients khác trong room
+                            forwarded_count = 0
+                            for client_sock in list(room['sockets']):
+                                if client_sock != sock:
+                                    try:
+                                        target_user = self.clients.get(client_sock, {}).get('username', 'unknown')
+                                        logging.info(f"[AudioDebug] Forwarding to {target_user}")
+                                        self.send_response(client_sock, payload)
+                                        forwarded_count += 1
+                                    except Exception as e:
+                                        logging.error(f"[SignalingServer] Error forwarding audio to {target_user}: {e}")
+                                        self.remove_client(client_sock)
+                            
+                            logging.info(f"[AudioDebug] Successfully forwarded to {forwarded_count}/{recipient_count} clients")
                         else:
-                            payload['data'] = data  # Giữ nguyên base64 string
-                        
-                        for client_sock in list(room['sockets']):
-                            if client_sock != sock:
-                                try:
-                                    self.send_response(client_sock, payload)
-                                except Exception as e:
-                                    logging.error(f"[SignalingServer] Error forwarding audio to {client_sock}: {e}")
-                                    self.remove_client(client_sock)
+                            logging.warning(f"[AudioDebug] Invalid audio data from {username}: type={type(data)}, size={data_size}")
+                else:
+                    logging.warning(f"[AudioDebug] Client not in room, cannot forward audio")
 
         elif msg_type == 'LEAVE_ROOM':
             self._handle_leave_room(sock)
 
         elif msg_type == 'GOODBYE':
-            logging.info("[SignalingServer] Client said goodbye")
+            logging.info(f"[ServerDebug] GOODBYE from {client_info.get('username', 'unknown')}")
             self.remove_client(sock)
 
         elif msg_type == 'PING':
             self.send_response(sock, {'type': 'PONG'})
+            logging.debug(f"[ServerDebug] PING from {client_info.get('username', 'unknown')}")
+
+        else:
+            logging.warning(f"[ServerDebug] Unknown message type: {msg_type}")
 
     def _handle_leave_room(self, sock):
         """Xử lý client rời phòng"""
         with self.lock:
             client_info = self.clients.get(sock)
             if not client_info or not client_info['room']:
+                logging.debug(f"[ServerDebug] LEAVE_ROOM: Client not in any room")
                 return
             
             room_id = client_info['room']
@@ -229,6 +260,9 @@ class SignalingServer:
                 room['sockets'].remove(sock)
                 if username in room['users']:
                     room['users'].remove(username)
+                
+                logging.info(f"[ServerDebug] {username} left room {room_id}")
+                logging.info(f"[ServerDebug] Room {room_id} remaining users: {room['users']}")
                 
                 for client_sock in list(room['sockets']):
                     self.send_response(client_sock, {
@@ -240,13 +274,16 @@ class SignalingServer:
                 
                 if not room['sockets']:
                     del self.rooms[room_id]
+                    logging.info(f"[ServerDebug] Room {room_id} deleted (empty)")
                 
                 self.clients[sock]['room'] = None
 
     def send_response(self, sock, message):
         """Gửi response đến client (thêm delimiter \\n)"""
         try:
-            sock.sendall((json.dumps(message) + "\n").encode(config.ENCODING))
+            message_str = json.dumps(message) + "\n"
+            sock.sendall(message_str.encode(config.ENCODING))
+            logging.debug(f"[ServerDebug] Sent: {message.get('type')} to socket {sock.fileno()}")
         except Exception as e:
             logging.error(f"[SignalingServer] Send error: {e}")
             self.remove_client(sock)
@@ -254,13 +291,16 @@ class SignalingServer:
     def remove_client(self, sock):
         """Xóa client khỏi hệ thống"""
         with self.lock:
+            username = self.clients.get(sock, {}).get('username', 'unknown')
+            room_id = self.clients.get(sock, {}).get('room')
+            
             self._handle_leave_room(sock)
             self.clients.pop(sock, None)
             self.client_timeouts.pop(sock, None)
+            
+            logging.info(f"[SignalingServer] Removed client: {username} (room: {room_id})")
         
         try:
             sock.close()
         except Exception:
             pass
-        
-        logging.info("[SignalingServer] Client removed")

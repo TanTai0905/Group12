@@ -688,23 +688,38 @@ class AudioCallApp:
 
     def _send_audio_data(self, audio_data):
         try:
-            # ✅ SỬA LỖI: Encode audio data thành base64 trước khi gửi
             if (self.current_room_id and 
                 not self.is_muted and 
                 self.network_handler.is_connected()):
                 
-                # Encode binary data thành base64 string
+                # KIỂM TRA KÍCH THƯỚC AUDIO DATA
+                sample_size = self.audio_handler.audio.get_sample_size(config.AUDIO_FORMAT)
+                expected_size = config.AUDIO_CHUNK * sample_size * config.AUDIO_CHANNELS
+                
+                if len(audio_data) != expected_size:
+                    logging.warning(f"[AudioSend] ❌ Size mismatch: {len(audio_data)} vs {expected_size}")
+                    # TỰ ĐỘNG ĐIỀU CHỈNH KÍCH THƯỚC
+                    if len(audio_data) < expected_size:
+                        audio_data = audio_data + b'\x00' * (expected_size - len(audio_data))
+                    else:
+                        audio_data = audio_data[:expected_size]
+                    logging.info(f"[AudioSend] ✅ Adjusted size to: {len(audio_data)}")
+                
+                # ENCODE VÀ GỬI
                 audio_b64 = base64.b64encode(audio_data).decode('utf-8')
                 
                 success = self.network_handler.send_message({
                     'type': 'AUDIO_DATA',
-                    'data': audio_b64  # Gửi dưới dạng string base64
+                    'data': audio_b64
                 })
-                if not success:
-                    logging.debug("[GUI] Failed to send audio data")
+                
+                if success:
+                    logging.debug(f"[AudioSend] ✅ Sent: {len(audio_data)} bytes")
+                else:
+                    logging.warning("[AudioSend] ❌ Failed to send")
                     
         except Exception as e:
-            logging.error(f"[GUI] Send audio error: {e}")
+            logging.error(f"[AudioSend] ❌ Error: {e}")
 
     def _get_audio_data(self):
         try:

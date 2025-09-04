@@ -1,36 +1,29 @@
+# Client/main_Client.py
 import customtkinter as ctk
-import sys
-import os
+from .Login_gui import LoginGUI
+from .Gui import AudioCallApp
 
-# Đảm bảo project root trong sys.path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(current_dir)
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
-try:
-    from Client.Gui import ChatApp
-    from Client.Login_gui import LoginGUI
-except ImportError as e:    
-    print(f"Import error: {e}")
-    # Fallback: try direct import
-    from Gui import ChatApp
-    from Login_gui import LoginGUI
+def start_audio_app(username: str):
+    """Khởi động ứng dụng audio call"""
+    root = ctk.CTk()
+    app = AudioCallApp(root, username=username)
+    root.mainloop()
 
 def main():
-    print("🚀 Khởi động Chat Client với GUI...")
+    """Hàm main"""
+    def on_login_success(username: str):
+        print(f"✅ Đăng nhập thành công: {username}")
+        start_audio_app(username)
 
-    def on_login_success(username):
-        ctk.set_appearance_mode("light")
-        root = ctk.CTk()
-        root.title(f"Chat Application - {username}")
-        root.geometry("1200x800")
+    def on_login_failure(msg: str):
+        print(f"❌ Đăng nhập thất bại: {msg}")
 
-        app = ChatApp(root, username=username)
-        root.mainloop()
-
-    login_app = LoginGUI(on_login_success_callback=on_login_success)
-    login_app.show()
+    # Khởi động login GUI
+    login_gui = LoginGUI(
+        on_login_success_callback=on_login_success,
+        on_login_failure_callback=on_login_failure,
+    )
+    login_gui.show()
 
 if __name__ == "__main__":
     main()
